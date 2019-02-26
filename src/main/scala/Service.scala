@@ -40,7 +40,7 @@ object Service extends App {
 
           val zipped = tags zip res
 
-          val data = ByteString(zipped.toJson.toString())//Упаковка в энтити ответа
+          val data = ByteString(zipped.toJson.toString())
           HttpResponse( entity = HttpEntity(ContentTypes.`application/json`, data))
 
       
