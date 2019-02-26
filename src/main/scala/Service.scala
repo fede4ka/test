@@ -19,30 +19,31 @@ object Service {
     implicit val executionContext = system.dispatcher
     val requestHandler: HttpRequest => HttpResponse = {
 
-      case a: HttpRequest => a match {
-          //Запрос к search
-        case HttpRequest(GET, Uri.Path("/search"), _, _, _) =>
-          //Ключевые теги из запроса
-          val tags =a.getUri().query().toString.split("&")
-            .flatMap(_.split("=")).toList.drop(1).sliding(1, 2).flatten.toList
-          println(tags)
+      val route =
+      get {path("search") {
+          parameters('tag.*) { params =>
+            val res = params
+              .map(uriconstructor)
+              .map(uri=> Http().singleRequest(HttpRequest(uri = uri)))
+              .map(future=>future.flatMap(x=>Gzip.decodeMessage(x).entity.toStrict(5 second))
+                .map(x=>x.getData().decodeString("utf8"))
+                .flatMap(x=>Future(answeredCount(x))))
+              .map(future=>Await.result(future, 10 second))
 
-          val res = tags
-            .map(uriconstructor)//Uri для каждого ключевого тега
-            .map(uri=> Http().singleRequest(HttpRequest(uri = uri)))//Запрос по каждому
-            .map(future=>future.flatMap(x=>Gzip.decodeMessage(x).entity.toStrict(5 second))
-              .map(x=>x.getData().decodeString("utf8"))//Декодирование ответа
-              .flatMap(x=>Future(answeredCount(x))))//Рассчёт статистики тегов в вопросах
-            .map(future=>Await.result(future, 10 second))
+            val zipped = params zip res
+            val data = ByteString(zipped.toJson.toString())
+            complete(HttpResponse( entity = HttpEntity(ContentTypes.`application/json`, data)))
+
+          }
+        }
+      }
 
           val zipped = tags zip res
 
           val data = ByteString(zipped.toJson.toString())//Упаковка в энтити ответа
           HttpResponse( entity = HttpEntity(ContentTypes.`application/json`, data))
 
-        case r: HttpRequest =>
-          r.discardEntityBytes()
-          HttpResponse(404, entity = "Unknown resource!")
+      
       }}
     val bindingFuture = Http().bindAndHandleSync(requestHandler, "localhost", 8080)
     println(s"Started...\nTest request link http://localhost:8080/search?tag=clojure&tag=haskell&tag=java\nPress RETURN to stop...")
