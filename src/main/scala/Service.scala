@@ -11,15 +11,14 @@ import scala.concurrent.duration._
 import spray.json._
 import methods._
 
-object Service {
-  def main(args: Array[String]) {
-    //Простейший шаблон HTTP сервера
-    implicit val system = ActorSystem()
+object Service extends App {
+
+
+    implicit val system = ActorSystem("my-system")
     implicit val materializer = ActorMaterializer()
     implicit val executionContext = system.dispatcher
-    val requestHandler: HttpRequest => HttpResponse = {
 
-      val route =
+    val route =
       get {path("search") {
           parameters('tag.*) { params =>
             val res = params
@@ -37,6 +36,7 @@ object Service {
           }
         }
       }
+
 
           val zipped = tags zip res
 
