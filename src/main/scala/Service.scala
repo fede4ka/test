@@ -12,8 +12,6 @@ import spray.json._
 import methods._
 
 object Service extends App {
-
-
     implicit val system = ActorSystem("my-system")
     implicit val materializer = ActorMaterializer()
     implicit val executionContext = system.dispatcher
@@ -37,13 +35,9 @@ object Service extends App {
         }
       }
 
-
           val zipped = tags zip res
-
           val data = ByteString(zipped.toJson.toString())
           HttpResponse( entity = HttpEntity(ContentTypes.`application/json`, data))
-
-      
       }}
     val bindingFuture = Http().bindAndHandleSync(requestHandler, "localhost", 8080)
     println(s"Started...\nTest request link http://localhost:8080/search?tag=clojure&tag=haskell&tag=java\nPress RETURN to stop...")
